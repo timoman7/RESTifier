@@ -53,7 +53,20 @@ function RESTAPI(config){
       'format',
       'diagnostics',
       'env'
-    ]
+    ],
+    parameterTypes: [
+      ['q', String],
+      ['format', 'json'],
+      ['diagnostics', 'true', 'false'],
+      ['env', 'store://datatables.org/alltableswithkeys']
+    ],
+    description: `YQLQuery(q, format, diagnostics, env)
+    Send a request to $$restAPI$$(config)
+    q is a $$q$$(single) following the yql query syntax
+    format is one of the following data types: $$format$$(single)
+    diagnostics is one of the following: $$diagnostics$$(multi)
+    env is a url of a yqltable database. The default ones are $$env$$(multi)
+    `
   });
   console.log(YQLQuery);
   let placeholderAPI = new RESTAPI();
