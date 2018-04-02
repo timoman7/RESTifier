@@ -151,6 +151,11 @@ function RESTAPI(config){
       dataType: dataType || 'jsonp',
       contentType: dataType || 'jsonp',
       data: data,
+      beforeSend: function(b){
+        for(let i in headers){
+          b.setRequestHeader(i, headers[i]);
+        }
+      },
       headers: headers,
       success: function(data){
         return {
@@ -172,6 +177,7 @@ function RESTAPI(config){
     enumerable: true
   });
 })();
+var TestAPIS = {};
 (async function Test(){
   let titleColor = "background-color: black; color: white; text-align: center;";
   let callColor = "background-color: teal; color: white; text-align: center;";
@@ -180,7 +186,7 @@ function RESTAPI(config){
   console.clog(titleColor, "Running tests");
   console.clog(titleColor, "YQLQuery test");
   let YQLQuery = new RESTAPI({
-    restAPI: `${window.location.protocol?window.location.protocol:'http:'}//query.yahooapis.com/v1/public/yql`,
+    restAPI: `${window.location.protocol=='https'?window.location.protocol:'http:'}//query.yahooapis.com/v1/public/yql`,
     parameters: [
       'q',
       'format',
@@ -206,16 +212,24 @@ function RESTAPI(config){
     env is a url of a yqltable database. The default ones are $$env$$(multi)
     `
   });
-  console.log('%c%s',callColor,YQLQuery);
-  console.clog(callColor, "YQLQuery", ..._YQLQueryTest_);
-  console.log('%c%o', returnColor, await YQLQuery(..._YQLQueryTest_));
-  console.clog(titleColor, "Placeholder/defaultAPI test");
+  try{
+    console.log('%c%s',callColor,YQLQuery);
+    console.clog(callColor, "YQLQuery", ..._YQLQueryTest_);
+    console.log('%c%o', returnColor, await YQLQuery(..._YQLQueryTest_));
+    console.clog(titleColor, "Placeholder/defaultAPI test");
+  }catch(e){
+    console.error(e);
+  }
   let placeholderAPI = new RESTAPI();
-  console.log(placeholderAPI);
-  console.log("%c%s","background-color: black; color: white; text-align: center;", "Placeholder example call");
-  console.log(placeholderAPI.example());
-  console.log("%c%s","background-color: black; color: white; text-align: center;", "Placeholder get post with userId: 1");
-  console.log(await placeholderAPI("GET", 'posts', {userId: 1}));
+  try{
+    console.log(placeholderAPI);
+    console.log("%c%s","background-color: black; color: white; text-align: center;", "Placeholder example call");
+    console.log(placeholderAPI.example());
+    console.log("%c%s","background-color: black; color: white; text-align: center;", "Placeholder get post with userId: 1");
+    console.log(await placeholderAPI("GET", 'posts', {userId: 1}));
+  }catch(e){
+    console.error(e);
+  }
   let SymboAPI = new RESTAPI({
     restAPI: 'https://www.symbolab.com/api/steps',
     parameters: [
@@ -250,37 +264,6 @@ function RESTAPI(config){
     dataType is $$dataType$$(multi)
     `
   });
-  SymboAPI.internalCall = async function(url, method, data, headers, dataType){
-    for(let i in headers){
-      console.log(i, headers[i])
-    }
-    console.log(1)
-    return await $.ajax({
-      url: url,
-      method: method,
-      dataType: dataType || 'text/plain',
-      data: data,
-      headers: headers,
-      beforeSend: function(b){
-      	for(let i in headers){
-      		console.log(i)
-      		b.setRequestHeader(i, headers[i]);
-        }
-      },
-      success: function(data){
-        return {
-          data: data,
-          result: 'success'
-        };
-      },
-      error: function(data){
-        return {
-          data: data,
-          result: 'error'
-        };
-      }
-    });
-  };
   let SymboRequestArr = [
     '\\lim_{x\\to-2^{-}}\\left(f\\left(x\\right)\\right)',
     'fe',
@@ -290,9 +273,25 @@ function RESTAPI(config){
       authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1MjI3NzM1NzQsImlzcyI6Imh0dHBzOi8vd3d3LnN5bWJvbGFiLmNvbSJ9.ZfGGPaZmunTt-c1fGcvsCS7qrzFch6kc4W0w-E6cNE4',
       'x-requested-with': 'XMLHttpRequest'
     },
-    'text/plain'
+    'application/json'
   ];
-  console.log(SymboAPI);
-  console.clog(callColor, "SymboAPI ",...SymboRequestArr);
-  console.log(await SymboAPI(...SymboRequestArr));
+  try{
+    console.log(SymboAPI);
+    console.clog(callColor, "SymboAPI ",...SymboRequestArr);
+    console.log(await SymboAPI(...SymboRequestArr));
+  }catch(e){
+    console.error(e);
+  }
+  TestAPIS = {
+    APIS:{
+      placeholderAPI: placeholderAPI,
+      YQLQuery: YQLQuery,
+      SymboAPI: SymboAPI
+    },
+    TESTCONDITIONS:{
+      placeholderAPI: 'none',
+      YQLQuery: _YQLQueryTest_,
+      SymboAPI: SymboRequestArr
+    }
+  };
 })();
