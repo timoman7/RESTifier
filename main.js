@@ -95,7 +95,8 @@ function RESTAPI(config){
   this.config = config || this.defaultConfig;
   let CONSTRUCTEDAPI = new AsyncFunction(...this.config.parameters, `
     let self = RESTAPI;
-    return await self.prototype.internalCall('${this.config.restAPI}${this.config.paramTransform?'\'+'+this.config.paramTransform.path+'+\'':''}',
+    let _internalCall_ = (this.internalCall?this:this.prototype?this.prototype:self.prototype).internalCall;
+    return await _internalCall_('${this.config.restAPI}${this.config.paramTransform?'\'+'+this.config.paramTransform.path+'+\'':''}',
     ${this.config.parameters.includes('method')?'method':'\"GET\"'},
     ${this.config.parameters.includes('data')?'data':'{\n'+this.config.parameters.remove(this.config.excludeFromData||['data', 'headers']).kvify().join(',\n')+'\n}'},
     ${this.config.parameters.includes('headers')?'headers':'{}'},
@@ -146,7 +147,9 @@ function RESTAPI(config){
     return await $.ajax({
       url: url,
       method: method,
+      crossDomain: true,
       dataType: dataType || 'jsonp',
+      contentType: dataType || 'jsonp',
       data: data,
       headers: headers,
       success: function(data){
@@ -247,15 +250,47 @@ function RESTAPI(config){
     dataType is $$dataType$$(multi)
     `
   });
+  SymboAPI.internalCall = async function(url, method, data, headers, dataType){
+    for(let i in headers){
+      console.log(i, headers[i])
+    }
+    console.log(1)
+    return await $.ajax({
+      url: url,
+      method: method,
+      dataType: dataType || 'text/plain',
+      data: data,
+      headers: headers,
+      beforeSend: function(b){
+      	for(let i in headers){
+      		console.log(i)
+      		b.setRequestHeader(i, headers[i]);
+        }
+      },
+      success: function(data){
+        return {
+          data: data,
+          result: 'success'
+        };
+      },
+      error: function(data){
+        return {
+          data: data,
+          result: 'error'
+        };
+      }
+    });
+  };
   let SymboRequestArr = [
     '\\lim_{x\\to-2^{-}}\\left(f\\left(x\\right)\\right)',
     'fe',
     'en',
     false,
     {
-      authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1MjI3NzM1NzQsImlzcyI6Imh0dHBzOi8vd3d3LnN5bWJvbGFiLmNvbSJ9.ZfGGPaZmunTt-c1fGcvsCS7qrzFch6kc4W0w-E6cNE4'
+      authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1MjI3NzM1NzQsImlzcyI6Imh0dHBzOi8vd3d3LnN5bWJvbGFiLmNvbSJ9.ZfGGPaZmunTt-c1fGcvsCS7qrzFch6kc4W0w-E6cNE4',
+      'x-requested-with': 'XMLHttpRequest'
     },
-    'application/x-www-form-urlencoded'
+    'text/plain'
   ];
   console.log(SymboAPI);
   console.clog(callColor, "SymboAPI ",...SymboRequestArr);
