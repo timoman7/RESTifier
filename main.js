@@ -1,4 +1,48 @@
 let AsyncFunction = Object.getPrototypeOf(async function(){}).constructor;
+Object.defineProperty(Array.prototype, 'insert', {
+  value: function(item, index){
+    let modArr = this;
+    modArr = this.slice(0, index).concat(item,this.splice(index));
+    return modArr;
+  }
+});
+Object.defineProperty(Array.prototype, 'weave', {
+  value: function(itemArr){
+    let modArr = this;
+    if(itemArr instanceof Array || typeof itemArr == 'string'){
+      for(let n = this.length-1; n>0;n--){
+        let val = itemArr instanceof Array?itemArr[(n-1)%itemArr.length]:itemArr;
+        modArr = modArr.insert(val,n);
+      }
+    }
+    return modArr;
+  }
+});
+Object.defineProperty(console, 'clog', {
+  value: function(c){
+    let strArr = [...arguments].reverse();
+    strArr.pop();
+    strArr = strArr.reverse();
+    let strArrL = strArr.length;
+    let strSubs = '';
+    for(let n = 0; n<strArrL; n++){
+      switch(typeof strArr[n]){
+        case 'object':
+          strSubs+='%c%o ';
+          break;
+        case 'string':
+          strSubs+='%c%s ';
+          break;
+        case 'number':
+          strSubs+='%c%f ';
+          break;
+      }
+    }
+    console.log.bind(console,strSubs, c, ...(strArr.weave(c)))();
+  },
+  writable: false,
+  enumerable: true
+});
 Object.defineProperty(Array.prototype, 'remove', {
   value: function(fArray){
     return this.filter((a)=>{
@@ -54,7 +98,8 @@ function RESTAPI(config){
     return await self.prototype.internalCall('${this.config.restAPI}${this.config.paramTransform?'\'+'+this.config.paramTransform.path+'+\'':''}',
     ${this.config.parameters.includes('method')?'method':'\"GET\"'},
     ${this.config.parameters.includes('data')?'data':'{\n'+this.config.parameters.remove(this.config.excludeFromData||['data', 'headers']).kvify().join(',\n')+'\n}'},
-    ${this.config.parameters.includes('headers')?'headers':'{}'});
+    ${this.config.parameters.includes('headers')?'headers':'{}'},
+    ${this.config.parameters.includes('dataType')?'dataType':'\'jsonp\''});
     `);
   Object.defineProperty(CONSTRUCTEDAPI, 'internalCall', {
     value: self.internalCall,
@@ -91,17 +136,17 @@ function RESTAPI(config){
     };
   }
   CONSTRUCTEDAPI.example = this.config.example || function(){
-    console.log('%c%s', "color: red;", 'No example present.');
+    console.clog('color: red;', 'No example present.');
   };
   return CONSTRUCTEDAPI;
 }
 (function(){
-  async function __internalCall__(url, method, data, headers){
+  async function __internalCall__(url, method, data, headers, dataType){
     //console.log(url, method, data, headers)
     return await $.ajax({
       url: url,
       method: method,
-      // dataType: 'json'
+      dataType: dataType || 'jsonp',
       data: data,
       headers: headers,
       success: function(data){
@@ -125,8 +170,12 @@ function RESTAPI(config){
   });
 })();
 (async function Test(){
-  console.log("%c%s","background-color: black; color: white; text-align: center;", "Running tests");
-  console.log("%c%s","background-color: black; color: white; text-align: center;", "YQLQuery test");
+  let titleColor = "background-color: black; color: white; text-align: center;";
+  let callColor = "background-color: teal; color: white; text-align: center;";
+  let returnColor = "background-color: orange; color: black; text-align: center;";
+  let _YQLQueryTest_ = ["select * from htmlstring where url='www.google.com'", 'json', true, 'store://datatables.org/alltableswithkeys'];
+  console.clog(titleColor, "Running tests");
+  console.clog(titleColor, "YQLQuery test");
   let YQLQuery = new RESTAPI({
     restAPI: 'http://query.yahooapis.com/v1/public/yql',
     parameters: [
@@ -154,14 +203,61 @@ function RESTAPI(config){
     env is a url of a yqltable database. The default ones are $$env$$(multi)
     `
   });
-  console.log(YQLQuery);
-  console.log("%c%s","background-color: black; color: white; text-align: center;", "YQLQuery select * from htmlstring where url='www.google.com'");
-  console.log(await YQLQuery("select * from htmlstring where url='www.google.com'", 'json', true, 'store://datatables.org/alltableswithkeys'))
-  console.log("%c%s","background-color: black; color: white; text-align: center;", "Placeholder/defaultAPI test");
+  console.log('%c%s',callColor,YQLQuery);
+  console.clog(callColor, "YQLQuery", ..._YQLQueryTest_);
+  console.log('%c%o', returnColor, await YQLQuery(..._YQLQueryTest_));
+  console.clog(titleColor, "Placeholder/defaultAPI test");
   let placeholderAPI = new RESTAPI();
   console.log(placeholderAPI);
   console.log("%c%s","background-color: black; color: white; text-align: center;", "Placeholder example call");
   console.log(placeholderAPI.example());
   console.log("%c%s","background-color: black; color: white; text-align: center;", "Placeholder get post with userId: 1");
   console.log(await placeholderAPI("GET", 'posts', {userId: 1}));
+  let SymboAPI = new RESTAPI({
+    restAPI: 'https://www.symbolab.com/api/steps',
+    parameters: [
+      'query',
+      'userId',
+      'language',
+      'subscribed',
+      'headers',
+      'dataType'
+    ],
+    parameterTypes: [
+      ['query', 'String'],
+      ['userId', 'String'],
+      ['language', 'String'],
+      ['subscribed', 'true', 'false'],
+      ['headers', 'Object'],
+      ['dataType', 'json', 'jsonp', 'xml', 'application/x-www-form-urlencoded', 'etc.']
+    ],
+    excludeFromData: [
+      'data',
+      'headers',
+      'method',
+      'dataType'
+    ],
+    description: `SymboAPI(query, format, diagnostics, env, headers)
+    Send a request to $$restAPI$$(config)
+    query is a $$query$$(single)
+    userId is a $$userId$$(single)
+    language is a $$language$$(single)
+    subscribed is one of the follow: $$subscribed$$(multi)
+    headers is an $$headers$$(single)
+    dataType is $$dataType$$(multi)
+    `
+  });
+  let SymboRequestArr = [
+    '\\lim_{x\\to-2^{-}}\\left(f\\left(x\\right)\\right)',
+    'fe',
+    'en',
+    false,
+    {
+      authorization: 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE1MjI3NzM1NzQsImlzcyI6Imh0dHBzOi8vd3d3LnN5bWJvbGFiLmNvbSJ9.ZfGGPaZmunTt-c1fGcvsCS7qrzFch6kc4W0w-E6cNE4'
+    },
+    'application/x-www-form-urlencoded'
+  ];
+  console.log(SymboAPI);
+  console.clog(callColor, "SymboAPI ",...SymboRequestArr);
+  console.log(await SymboAPI(...SymboRequestArr));
 })();
