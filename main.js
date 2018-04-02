@@ -177,7 +177,7 @@ function RESTAPI(config){
   console.clog(titleColor, "Running tests");
   console.clog(titleColor, "YQLQuery test");
   let YQLQuery = new RESTAPI({
-    restAPI: 'http://query.yahooapis.com/v1/public/yql',
+    restAPI: `${window.protocol?window.protocol:'http:'}//query.yahooapis.com/v1/public/yql`,
     parameters: [
       'q',
       'format',
